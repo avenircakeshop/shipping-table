@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>出荷管理表</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .month-selector {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .month-selector label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .month-selector select {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            border: 2px solid #333;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        th, td {
+            border: 1px solid #333;
+            padding: 8px;
+            text-align: center;
+            min-width: 80px;
+        }
+        
+        th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .date-cell {
+            font-weight: bold;
+            min-width: 60px;
+        }
+        
+        .day-cell {
+            min-width: 60px;
+        }
+        
+        .saturday {
+            background-color: #0066cc !important;
+            color: white !important;
+        }
+        
+        .sunday, .holiday {
+            background-color: #cc0000 !important;
+            color: white !important;
+        }
+        
+        .closed-day {
+            background-color: #666666 !important;
+        }
+        
+        .closed-day td {
+            background-color: #666666 !important;
+            color: #ccc !important;
+        }
+        
+        input[type="checkbox"] {
+            transform: scale(1.2);
+        }
+        
+        .shipping-items {
+            min-width: 60px;
+        }
+        
+        .checkbox-cell {
+            min-width: 80px;
+        }
+        
+        .year-month-selector {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .year-month-selector label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .year-month-selector select {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            margin: 0 10px;
+        }
+        
+        .print-button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 20px;
+        }
+        
+        .print-button:hover {
+            background-color: #45a049;
+        }
+        
+        @media print {
+            body {
+                margin: 0;
+                padding: 10px;
+                background-color: white;
+                font-size: 11px;
+            }
+            
+            .container {
+                box-shadow: none;
+                padding: 0;
+                max-width: none;
+                margin: 0;
+            }
+            
+            .year-month-selector, .print-button {
+                display: none;
+            }
+            
+            h1 {
+                font-size: 18px;
+                margin: 10px 0;
+            }
+            
+            table {
+                font-size: 10px;
+                page-break-inside: avoid;
+            }
+            
+            th, td {
+                padding: 4px;
+                min-width: auto;
+                font-size: 10px;
+            }
+            
+            /* 出荷完了より右の2列を印刷時に非表示 */
+            th:nth-child(8), th:nth-child(9),
+            td:nth-child(8), td:nth-child(9) {
+                display: none;
+            }
+            
+            .table-container {
+                border: 1px solid #000;
+                overflow: visible;
+            }
+            
+            .saturday {
+                background-color: #0066cc !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            .sunday, .holiday {
+                background-color: #cc0000 !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            .closed-day {
+                background-color: #666666 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            .closed-day td {
+                background-color: #666666 !important;
+                color: #ccc !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            @page {
+                size: A4;
+                margin: 1cm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>出荷管理表</h1>
+        
+        <div class="year-month-selector">
+            <label for="yearSelect">年:</label>
+            <select id="yearSelect">
+                <option value="2023">2023年</option>
+                <option value="2024">2024年</option>
+                <option value="2025" selected>2025年</option>
+                <option value="2026">2026年</option>
+                <option value="2027">2027年</option>
+            </select>
+            
+            <label for="monthSelect">月:</label>
+            <select id="monthSelect">
+                <option value="1">1月</option>
+                <option value="2">2月</option>
+                <option value="3">3月</option>
+                <option value="4">4月</option>
+                <option value="5">5月</option>
+                <option value="6">6月</option>
+                <option value="7">7月</option>
+                <option value="8" selected>8月</option>
+                <option value="9">9月</option>
+                <option value="10">10月</option>
+                <option value="11">11月</option>
+                <option value="12">12月</option>
+            </select>
+            
+            <button class="print-button" onclick="window.print()">印刷</button>
+        </div>
+        
+        <div class="table-container">
+            <table id="shippingTable">
+                <thead>
+                    <tr>
+                        <th>日付</th>
+                        <th>曜日</th>
+                        <th>常温</th>
+                        <th>冷蔵</th>
+                        <th>冷凍</th>
+                        <th>メール</th>
+                        <th>出荷完了</th>
+                        <th></th>
+                        <th>定休日</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // 日本の祝日データ（複数年対応）
+        const holidays = {
+            2023: {
+                '1-1': '元日',
+                '1-9': '成人の日',
+                '2-11': '建国記念の日',
+                '2-23': '天皇誕生日',
+                '3-21': '春分の日',
+                '4-29': '昭和の日',
+                '5-3': '憲法記念日',
+                '5-4': 'みどりの日',
+                '5-5': 'こどもの日',
+                '7-17': '海の日',
+                '8-11': '山の日',
+                '9-18': '敬老の日',
+                '9-23': '秋分の日',
+                '10-9': 'スポーツの日',
+                '11-3': '文化の日',
+                '11-23': '勤労感謝の日'
+            },
+            2024: {
+                '1-1': '元日',
+                '1-8': '成人の日',
+                '2-11': '建国記念の日',
+                '2-12': '建国記念の日 振替休日',
+                '2-23': '天皇誕生日',
+                '3-20': '春分の日',
+                '4-29': '昭和の日',
+                '5-3': '憲法記念日',
+                '5-4': 'みどりの日',
+                '5-5': 'こどもの日',
+                '5-6': 'こどもの日 振替休日',
+                '7-15': '海の日',
+                '8-11': '山の日',
+                '8-12': '山の日 振替休日',
+                '9-16': '敬老の日',
+                '9-22': '秋分の日',
+                '9-23': '秋分の日 振替休日',
+                '10-14': 'スポーツの日',
+                '11-3': '文化の日',
+                '11-4': '文化の日 振替休日',
+                '11-23': '勤労感謝の日'
+            },
+            2025: {
+                '1-1': '元日',
+                '1-13': '成人の日',
+                '2-11': '建国記念の日',
+                '2-23': '天皇誕生日',
+                '3-20': '春分の日',
+                '4-29': '昭和の日',
+                '5-3': '憲法記念日',
+                '5-4': 'みどりの日',
+                '5-5': 'こどもの日',
+                '5-6': 'こどもの日 振替休日',
+                '7-21': '海の日',
+                '8-11': '山の日',
+                '9-15': '敬老の日',
+                '9-23': '秋分の日',
+                '10-13': 'スポーツの日',
+                '11-3': '文化の日',
+                '11-23': '勤労感謝の日',
+                '11-24': '勤労感謝の日 振替休日'
+            },
+            2026: {
+                '1-1': '元日',
+                '1-12': '成人の日',
+                '2-11': '建国記念の日',
+                '2-23': '天皇誕生日',
+                '3-20': '春分の日',
+                '4-29': '昭和の日',
+                '5-3': '憲法記念日',
+                '5-4': 'みどりの日',
+                '5-5': 'こどもの日',
+                '5-6': 'こどもの日 振替休日',
+                '7-20': '海の日',
+                '8-11': '山の日',
+                '9-21': '敬老の日',
+                '9-22': '秋分の日',
+                '10-12': 'スポーツの日',
+                '11-3': '文化の日',
+                '11-23': '勤労感謝の日'
+            },
+            2027: {
+                '1-1': '元日',
+                '1-11': '成人の日',
+                '2-11': '建国記念の日',
+                '2-23': '天皇誕生日',
+                '3-21': '春分の日',
+                '4-29': '昭和の日',
+                '5-3': '憲法記念日',
+                '5-4': 'みどりの日',
+                '5-5': 'こどもの日',
+                '7-19': '海の日',
+                '8-11': '山の日',
+                '9-20': '敬老の日',
+                '9-23': '秋分の日',
+                '10-11': 'スポーツの日',
+                '11-3': '文化の日',
+                '11-23': '勤労感謝の日'
+            }
+        };
+
+        function getDaysInMonth(year, month) {
+            return new Date(year, month, 0).getDate();
+        }
+
+        function getDayOfWeek(year, month, day) {
+            const date = new Date(year, month - 1, day);
+            const days = ['日', '月', '火', '水', '木', '金', '土'];
+            return days[date.getDay()];
+        }
+
+        function isHoliday(year, month, day) {
+            const yearHolidays = holidays[year];
+            if (!yearHolidays) return false;
+            const key = `${month}-${day}`;
+            return yearHolidays[key] !== undefined;
+        }
+
+        function getDayClass(dayOfWeek, year, month, day) {
+            if (isHoliday(year, month, day)) {
+                return 'holiday';
+            }
+            if (dayOfWeek === '土') {
+                return 'saturday';
+            }
+            if (dayOfWeek === '日') {
+                return 'sunday';
+            }
+            return '';
+        }
+
+        function generateTable() {
+            const yearSelect = document.getElementById('yearSelect');
+            const monthSelect = document.getElementById('monthSelect');
+            const selectedYear = parseInt(yearSelect.value);
+            const selectedMonth = parseInt(monthSelect.value);
+            const daysInMonth = getDaysInMonth(selectedYear, selectedMonth);
+            const tableBody = document.getElementById('tableBody');
+            
+            // テーブルクリア
+            tableBody.innerHTML = '';
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayOfWeek = getDayOfWeek(selectedYear, selectedMonth, day);
+                const dayClass = getDayClass(dayOfWeek, selectedYear, selectedMonth, day);
+                
+                const row = document.createElement('tr');
+                row.setAttribute('data-day', day);
+                
+                // 日付セル
+                const dateCell = document.createElement('td');
+                dateCell.className = `date-cell ${dayClass}`;
+                dateCell.textContent = day;
+                row.appendChild(dateCell);
+                
+                // 曜日セル
+                const dayCell = document.createElement('td');
+                dayCell.className = `day-cell ${dayClass}`;
+                dayCell.textContent = dayOfWeek;
+                row.appendChild(dayCell);
+                
+                // 常温セル
+                const normalTempCell = document.createElement('td');
+                normalTempCell.className = 'shipping-items';
+                row.appendChild(normalTempCell);
+                
+                // 冷蔵セル
+                const coldCell = document.createElement('td');
+                coldCell.className = 'shipping-items';
+                row.appendChild(coldCell);
+                
+                // 冷凍セル
+                const frozenCell = document.createElement('td');
+                frozenCell.className = 'shipping-items';
+                row.appendChild(frozenCell);
+                
+                // メールセル
+                const emailCell = document.createElement('td');
+                emailCell.className = 'shipping-items';
+                row.appendChild(emailCell);
+                
+                // 出荷完了チェックボックス
+                const shippingCompleteCell = document.createElement('td');
+                shippingCompleteCell.className = 'checkbox-cell';
+                const shippingCheckbox = document.createElement('input');
+                shippingCheckbox.type = 'checkbox';
+                shippingCheckbox.setAttribute('data-type', 'shipping');
+                shippingCompleteCell.appendChild(shippingCheckbox);
+                row.appendChild(shippingCompleteCell);
+                
+                // 空白セル
+                const emptyCell = document.createElement('td');
+                emptyCell.style.width = '20px';
+                emptyCell.style.minWidth = '20px';
+                row.appendChild(emptyCell);
+                
+                // 定休日チェックボックス
+                const closedDayCell = document.createElement('td');
+                closedDayCell.className = 'checkbox-cell';
+                const closedCheckbox = document.createElement('input');
+                closedCheckbox.type = 'checkbox';
+                closedCheckbox.setAttribute('data-type', 'closed');
+                closedCheckbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        row.classList.add('closed-day');
+                    } else {
+                        row.classList.remove('closed-day');
+                    }s
+                });
+                closedDayCell.appendChild(closedCheckbox);
+                row.appendChild(closedDayCell);
+                
+                tableBody.appendChild(row);
+            }
+        }
+
+        // 年・月選択の変更イベント
+        document.getElementById('yearSelect').addEventListener('change', generateTable);
+        document.getElementById('monthSelect').addEventListener('change', generateTable);
+        
+        // 初期表示
+        generateTable();
+    </script>
+</body>
+</html>
